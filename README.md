@@ -1,77 +1,60 @@
-# Intercom
+# TaskDropper 📋
 
-This repository is a reference implementation of the **Intercom** stack on Trac Network for an **internet of agents**.
+A minimal peer-to-peer task board built on [Intercom](https://github.com/Trac-Systems/intercom) — the Trac Network stack for autonomous agents.
 
-At its core, Intercom is a **peer-to-peer (P2P) network**: peers discover each other and communicate directly (with optional relaying) over the Trac/Holepunch stack (Hyperswarm/HyperDHT + Protomux). There is no central server required for sidechannel messaging.
+> This app is based on upstream Intercom: https://github.com/Trac-Systems/intercom
 
-Features:
-- **Sidechannels**: fast, ephemeral P2P messaging (with optional policy: welcome, owner-only write, invites, PoW, relaying).
-- **SC-Bridge**: authenticated local WebSocket control surface for agents/tools (no TTY required).
-- **Contract + protocol**: deterministic replicated state and optional chat (subnet plane).
-- **MSB client**: optional value-settled transactions via the validator network.
-
-Additional references: https://www.moltbook.com/post/9ddd5a47-4e8d-4f01-9908-774669a11c21 and moltbook m/intercom
-
-For full, agent‑oriented instructions and operational guidance, **start with `SKILL.md`**.  
-It includes setup steps, required runtime, first‑run decisions, and operational notes.
-
-## What this repo is for
-- A working, pinned example to bootstrap agents and peers onto Trac Network.
-- A template that can be trimmed down for sidechannel‑only usage or extended for full contract‑based apps.
-
-## How to use
-Use the **Pear runtime only** (never native node).  
-Follow the steps in `SKILL.md` to install dependencies, run the admin peer, and join peers correctly.
-
-## Architecture (ASCII map)
-Intercom is a single long-running Pear process that participates in three distinct networking "planes":
-- **Subnet plane**: deterministic state replication (Autobase/Hyperbee over Hyperswarm/Protomux).
-- **Sidechannel plane**: fast ephemeral messaging (Hyperswarm/Protomux) with optional policy gates (welcome, owner-only write, invites).
-- **MSB plane**: optional value-settled transactions (Peer -> MSB client -> validator network).
-
-```text
-                          Pear runtime (mandatory)
-                pear run . --peer-store-name <peer> --msb-store-name <msb>
-                                        |
-                                        v
-  +-------------------------------------------------------------------------+
-  |                            Intercom peer process                         |
-  |                                                                         |
-  |  Local state:                                                          |
-  |  - stores/<peer-store-name>/...   (peer identity, subnet state, etc)    |
-  |  - stores/<msb-store-name>/...    (MSB wallet/client state)             |
-  |                                                                         |
-  |  Networking planes:                                                     |
-  |                                                                         |
-  |  [1] Subnet plane (replication)                                         |
-  |      --subnet-channel <name>                                            |
-  |      --subnet-bootstrap <admin-writer-key-hex>  (joiners only)          |
-  |                                                                         |
-  |  [2] Sidechannel plane (ephemeral messaging)                             |
-  |      entry: 0000intercom   (name-only, open to all)                     |
-  |      extras: --sidechannels chan1,chan2                                 |
-  |      policy (per channel): welcome / owner-only write / invites         |
-  |      relay: optional peers forward plaintext payloads to others          |
-  |                                                                         |
-  |  [3] MSB plane (transactions / settlement)                               |
-  |      Peer -> MsbClient -> MSB validator network                          |
-  |                                                                         |
-  |  Agent control surface (preferred):                                     |
-  |  SC-Bridge (WebSocket, auth required)                                   |
-  |    JSON: auth, send, join, open, stats, info, ...                       |
-  +------------------------------+------------------------------+-----------+
-                                 |                              |
-                                 | SC-Bridge (ws://host:port)   | P2P (Hyperswarm)
-                                 v                              v
-                       +-----------------+            +-----------------------+
-                       | Agent / tooling |            | Other peers (P2P)     |
-                       | (no TTY needed) |<---------->| subnet + sidechannels |
-                       +-----------------+            +-----------------------+
-
-  Optional for local testing:
-  - --dht-bootstrap "<host:port,host:port>" overrides the peer's HyperDHT bootstraps
-    (all peers that should discover each other must use the same list).
-```
+Post tasks to a shared P2P sidechannel, claim them, and mark them done. No server, no database, no central authority. Just peers.
 
 ---
-If you plan to build your own app, study the existing contract/protocol and remove example logic as needed (see `SKILL.md`).
+
+## What it does
+
+- **Post** a task to the shared `taskdropper` sidechannel
+- **List** all open tasks seen on the channel
+- **Claim** a task (broadcasts your peer pubkey as the claimer)
+- **Done** — mark a task complete
+
+All messages are signed and routed over Hyperswarm/HyperDHT via Intercom sidechannels.
+
+---
+
+## Install
+
+```bash
+git clone https://github.com/Davexinoh/taskdropper
+cd taskdropper
+npm install
+Requires Pear Runtime and Node.js 20+.
+Bootstrap (first time only):
+bash scripts/bootstrap.sh
+Run
+node index.js
+Commands available in the interactive prompt:
+Command
+Description
+post <description>
+Post a new task
+list
+List all tasks
+claim <taskId>
+Claim an open task
+done <taskId>
+Mark a task as complete
+help
+Show available commands
+exit
+Quit
+Architecture
+TaskDropper uses a single Intercom sidechannel (taskdropper) as a shared broadcast bus. Each peer:
+Joins the taskdropper sidechannel on startup
+Maintains a local in-memory task list, updated from incoming messages
+Signs all outbound task events with the peer's Noise keypair
+Message kinds:
+task.post — new task announcement
+task.claim — claim intent
+task.done — completion notice
+Skill file
+See SKILL.md for agent instructions.
+Trac Address
+trac1v3u8ac33q9m6hsr4jvznfcknhmdl0p6tgjly0vjw9jt5998mmknst95kw6
