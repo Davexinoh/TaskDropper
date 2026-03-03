@@ -1,78 +1,80 @@
-# TaskDropper — SKILL.md
+# Intercom Desk – Agent Skill File
 
-This file is the canonical install and operations guide for TaskDropper. If you are an agent, treat this as the source of truth.
+## Overview
 
----
+Intercom Desk is a structured complaint handling interface built on the Intercom ecosystem.
 
-## What This App Does
+It allows users to:
+- Select complaint categories
+- Drill down into sub-issues
+- Submit structured complaints
+- Receive guided support flows
 
-TaskDropper is a minimal P2P task board built on Intercom. It uses a shared Intercom sidechannel (`taskdropper`) to broadcast task events between peers. There is no central server or database.
-
-Upstream Intercom: https://github.com/Trac-Systems/intercom
-
-Supported task events:
-- `task.post` — announce a new task
-- `task.claim` — claim an open task
-- `task.done` — mark a task as complete
+This replaces unstructured support messaging with a guided, categorized interaction model.
 
 ---
 
-## Requirements
+## Capabilities
 
-- Node.js 20+
-- Pear Runtime (`npm install -g pear` or see https://docs.pears.com)
-- npm
+- List complaint categories
+- Fetch sub-issues based on category
+- Submit structured complaint data
+- Validate required complaint fields
+- Return confirmation responses
 
 ---
 
-## Install
+## API Endpoints
 
-```bash
-git clone https://github.com/Davexinoh/taskdropper
-cd taskdropper
-npm install
-bash scripts/bootstrap.sh
-Run
-node index.js
-The peer will start, join the taskdropper sidechannel, and present an interactive prompt.
-Agent Instructions
-To operate TaskDropper as an agent:
-Start the peer:
-node index.js
-Post a task:
-post Fix the login bug
-List open tasks:
-list
-Claim a task by its ID:
-claim <taskId>
-Mark a task done:
-done <taskId>
-Message Format
-task.post
+### GET /api/categories
+Returns available complaint categories.
+
+### GET /api/categories/:id
+Returns sub-issues under selected category.
+
+### POST /api/complaints
+Submits a structured complaint.
+
+Body example:
+
 {
-  "kind": "task.post",
-  "taskId": "<uuid>",
-  "description": "Fix the login bug",
-  "postedAt": 1709000000,
-  "poster": "<peerPubkeyHex>"
+  "category": "payment",
+  "subIssue": "failed_transaction",
+  "description": "My payment was deducted but not confirmed."
 }
-task.claim
-{
-  "kind": "task.claim",
-  "taskId": "<uuid>",
-  "claimer": "<peerPubkeyHex>",
-  "claimedAt": 1709000001
-}
-task.done
-{
-  "kind": "task.done",
-  "taskId": "<uuid>",
-  "completedBy": "<peerPubkeyHex>",
-  "completedAt": 1709000002
-}
-Sidechannel
-Default sidechannel: taskdropper
-To use a custom channel:
-TASKDROPPER_CHANNEL=my-team-tasks node index.js
-Trac Address
-trac1v3u8ac33q9m6hsr4jvznfcknhmdl0p6tgjly0vjw9jt5998mmknst95kw6
+
+---
+
+## How To Run
+
+1. Install dependencies:
+   npm install
+
+2. Start backend:
+   node api/server.js
+
+3. Start frontend:
+   cd web
+   npm install
+   npm run dev
+
+Frontend default: http://localhost:5173  
+API default: http://localhost:3001
+
+---
+
+## Deployment
+
+Frontend: https://intercomdesk.netlify.app  
+API: https://intercom-desk.onrender.com
+
+---
+
+## Notes For Agents
+
+Agents should:
+- Always request category first
+- Then request sub-issue
+- Then collect structured description
+- Validate required fields before submission
+- Return confirmation with reference ID
