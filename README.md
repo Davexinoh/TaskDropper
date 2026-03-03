@@ -29,8 +29,8 @@ intercom-desk/ │ ├── api/        # API interaction layer ├── cli/ 
 Clone the repository:
 
 ```bash
-git clone git@github.com:Davexinoh/TaskDropper.git
-cd TaskDropper
+git clone https://github.com/Davexinoh/IntercomDesk.git
+cd IntercomDesk
 Install dependencies:
 Bash
 Copy code
@@ -54,7 +54,6 @@ Fast iteration
 Configured for deployment via:
 Netlify (frontend)
 Custom Node environment
-Replit development support
 🛠 Tech Stack
 Node.js
 Modular JavaScript architecture
