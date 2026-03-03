@@ -66,6 +66,7 @@ Real-time API hooks
 Improved logging
 Auth layer
 Dashboard analytics
+# Live Demo https://intercomdesk.netlify.app/
 👤 Author
 Built by Davexinoh
 🧾 License
