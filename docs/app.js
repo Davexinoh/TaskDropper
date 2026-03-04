@@ -108,3 +108,21 @@ document.getElementById("result").innerHTML =
 "✅ Complaint submitted<br>Reference ID: <b>"+data.reference+"</b>"
 
 }
+
+async function checkStatus(){
+
+const id=document.getElementById("ticketId").value
+
+const res=await fetch(API+"/api/complaints/"+id)
+
+const data=await res.json()
+
+if(data.error){
+document.getElementById("statusResult").innerHTML="Ticket not found"
+return
+}
+
+document.getElementById("statusResult").innerHTML =
+"Status: "+data.status
+
+}
