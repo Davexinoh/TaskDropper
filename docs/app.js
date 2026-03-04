@@ -1,4 +1,4 @@
-const API = "https://intercom-desk.onrender.com";
+const API = "https://intercomdesk-v2.onrender.com";
 
 async function loadCategories(){
 
@@ -82,3 +82,4 @@ document.getElementById("result").innerText =
 }
 
 loadCategories();
+
