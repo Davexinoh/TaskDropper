@@ -1,32 +1,71 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html><html>
 <head>
-<title>Intercom Desk</title>
-</head>
+<meta charset="UTF-8">
+<title>Intercom Desk</title><style>
 
-<body>
+body{
+font-family: Inter, system-ui;
+background:#0f172a;
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
 
-<h2>Intercom Desk Complaint System</h2>
+.container{
+background:#111827;
+padding:40px;
+border-radius:16px;
+width:420px;
+box-shadow:0 10px 40px rgba(0,0,0,.6);
+}
 
-<label>Category</label>
+h1{
+font-size:24px;
+margin-bottom:20px;
+}
+
+select,textarea,button{
+width:100%;
+padding:12px;
+margin-top:10px;
+border-radius:8px;
+border:none;
+font-size:14px;
+}
+
+select,textarea{
+background:#1f2937;
+color:white;
+}
+
+button{
+background:#6366f1;
+color:white;
+font-weight:bold;
+cursor:pointer;
+transition:.2s;
+}
+
+button:hover{
+background:#4f46e5;
+}
+
+.success{
+margin-top:15px;
+color:#22c55e;
+}
+
+</style></head><body><div class="container"><h1>Intercom Desk</h1><label>Category</label>
 <select id="category"></select>
-
-<br><br>
 
 <label>Sub Issue</label>
 <select id="subIssue"></select>
 
-<br><br>
+<label>Description</label>
 
-<textarea id="description" placeholder="Describe your problem"></textarea>
+<textarea id="description"></textarea><button onclick="submitComplaint()">Submit Complaint</button>
 
-<br><br>
-
-<button onclick="submitComplaint()">Submit</button>
-
-<p id="result"></p>
-
-<script src="app.js"></script>
-
-</body>
+<div id="result" class="success"></div></div><script src="app.js"></script></body>
 </html>
