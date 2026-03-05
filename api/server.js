@@ -159,3 +159,108 @@ app.get("/api/admin/tickets/:id", requireAdmin, async (req, res) => {
   if (!t) return res.status(404).json({ error: "not found" });
 
   const timeline = await all(`SELECT event, at FROM timeline WHERE ticket_id = ? ORDER BY at ASC;`, [id]);
+  const messages = await all(`SELECT sender, body AS text, at FROM messages WHERE ticket_id = ? ORDER BY at ASC;`, [id]);
+  const attachments = await all(`SELECT name, mime AS type, data_url AS data, at FROM attachments WHERE ticket_id = ? ORDER BY at ASC;`, [id]);
+
+  res.json({
+    id: t.id,
+    category: t.category_id,
+    subIssue: t.sub_issue,
+    priority: t.priority,
+    status: t.status,
+    description: t.description,
+    createdAt: t.created_at,
+    updatedAt: t.updated_at,
+    adminReply: t.admin_reply,
+    internalNote: t.internal_note,
+    assignedTo: t.assigned_to,
+    tags: t.tags,
+    timeline,
+    messages,
+    attachments
+  });
+});
+
+// ---------- Admin: Update ticket (status/reply/note/assign/tags) ----------
+app.post("/api/admin/tickets/update", requireAdmin, async (req, res) => {
+  const { id, status, adminReply, internalNote, assignedTo, tags } = req.body;
+  if (!id) return res.status(400).json({ error: "missing id" });
+
+  const t = await get(`SELECT id, status FROM tickets WHERE id = ?;`, [id]);
+  if (!t) return res.status(404).json({ error: "not found" });
+
+  const at = now();
+
+  if (status && status !== t.status) {
+    await run(`UPDATE tickets SET status = ?, updated_at = ? WHERE id = ?;`, [status, at, id]);
+    await run(`INSERT INTO timeline (ticket_id, event, at) VALUES (?, ?, ?);`, [id, status, at]);
+  } else {
+    await run(`UPDATE tickets SET updated_at = ? WHERE id = ?;`, [at, id]);
+  }
+
+  if (typeof adminReply === "string") await run(`UPDATE tickets SET admin_reply = ? WHERE id = ?;`, [adminReply, id]);
+  if (typeof internalNote === "string") await run(`UPDATE tickets SET internal_note = ? WHERE id = ?;`, [internalNote, id]);
+  if (typeof assignedTo === "string") await run(`UPDATE tickets SET assigned_to = ? WHERE id = ?;`, [assignedTo, id]);
+  if (typeof tags === "string") await run(`UPDATE tickets SET tags = ? WHERE id = ?;`, [tags, id]);
+
+  res.json({ success: true });
+});
+
+// ---------- Admin: Send chat message ----------
+app.post("/api/admin/tickets/message", requireAdmin, async (req, res) => {
+  const { id, text } = req.body;
+  if (!id) return res.status(400).json({ error: "missing id" });
+
+  const t = await get(`SELECT id FROM tickets WHERE id = ?;`, [id]);
+  if (!t) return res.status(404).json({ error: "not found" });
+
+  if (!text || !String(text).trim()) return res.status(400).json({ error: "empty" });
+
+  const at = now();
+  await run(`INSERT INTO messages (ticket_id, sender, body, at) VALUES (?, ?, ?, ?);`, [id, "admin", String(text).trim(), at]);
+  await run(`UPDATE tickets SET updated_at = ? WHERE id = ?;`, [at, id]);
+
+  res.json({ success: true });
+});
+
+// ---------- Admin: Export ----------
+app.get("/api/admin/export", requireAdmin, async (req, res) => {
+  const rows = await all(`SELECT * FROM tickets ORDER BY updated_at DESC;`);
+  res.json({ exportedAt: now(), tickets: rows });
+});
+
+// ---------- Admin: Category manager ----------
+app.get("/api/admin/categories", requireAdmin, async (req, res) => {
+  const cats = await all(`SELECT id, name FROM categories ORDER BY name ASC;`);
+  const out = [];
+  for (const c of cats) {
+    const issues = await all(`SELECT issue FROM category_issues WHERE category_id = ? ORDER BY issue ASC;`, [c.id]);
+    out.push({ id: c.id, name: c.name, issues: issues.map(x => x.issue) });
+  }
+  res.json(out);
+});
+
+app.post("/api/admin/categories/save", requireAdmin, async (req, res) => {
+  const { next } = req.body;
+  if (!Array.isArray(next)) return res.status(400).json({ error: "invalid" });
+
+  // Replace categories atomically-ish (simple approach)
+  await run(`DELETE FROM category_issues;`);
+  await run(`DELETE FROM categories;`);
+
+  for (const c of next) {
+    if (!c || !c.id || !c.name || !Array.isArray(c.issues)) continue;
+    await run(`INSERT INTO categories (id, name) VALUES (?, ?);`, [String(c.id), String(c.name)]);
+    for (const issue of c.issues) {
+      await run(`INSERT INTO category_issues (category_id, issue) VALUES (?, ?);`, [String(c.id), String(issue)]);
+    }
+  }
+
+  res.json({ success: true });
+});
+
+// ---------- Boot ----------
+(async () => {
+  await init();
+  app.listen(PORT, () => console.log(`✅ IntercomDesk API running on :${PORT}`));
+})();
