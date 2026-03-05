@@ -1,406 +1,51 @@
-<!DOCTYPE html><html><head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0"><title>IntercomDesk</title><style>
+<!DOCTYPE html>
+<html>
+<head>
 
-*{box-sizing:border-box}
+<title>IntercomDesk</title>
 
-body{
-margin:0;
-font-family:Inter,system-ui;
+<link rel="stylesheet" href="style.css">
 
-background:
-radial-gradient(circle at 20% 20%,#6366f155,transparent),
-radial-gradient(circle at 80% 80%,#22c55e33,transparent),
-#020617;
+</head>
 
-height:100vh;
+<body>
 
-display:flex;
-justify-content:center;
-align-items:center;
+<div class="topbar">
 
-color:white;
-}
+<h1>IntercomDesk</h1>
 
-.app{
+<div class="nav">
 
-width:100%;
-max-width:440px;
-height:720px;
-
-background:rgba(17,24,39,.9);
-
-border-radius:24px;
-
-display:flex;
-flex-direction:column;
-
-overflow:hidden;
-
-box-shadow:0 40px 120px rgba(0,0,0,.8);
-
-border:1px solid rgba(255,255,255,.06);
-}
-
-.header{
-
-background:linear-gradient(90deg,#6366f1,#22c55e);
-
-padding:18px;
-
-font-weight:600;
-
-display:flex;
-justify-content:space-between;
-align-items:center;
-
-}
-
-.tabs button{
-
-background:transparent;
-border:none;
-color:white;
-cursor:pointer;
-font-size:12px;
-margin-left:10px;
-}
-
-.chat{
-
-flex:1;
-padding:18px;
-overflow-y:auto;
-display:flex;
-flex-direction:column;
-gap:12px;
-}
-
-.bubble{
-
-max-width:75%;
-padding:12px 14px;
-border-radius:16px;
-font-size:14px;
-animation:pop .2s ease;
-}
-
-.bot{background:#1f2937}
-.user{background:#6366f1;align-self:flex-end}
-
-.typing{
-font-size:12px;
-opacity:.6;
-}
-
-.input{
-
-display:flex;
-gap:8px;
-padding:14px;
-background:#020617;
-}
-
-input{
-
-flex:1;
-padding:12px;
-border:none;
-border-radius:12px;
-background:#1f2937;
-color:white;
-
-}
-
-button{
-
-padding:12px 16px;
-border:none;
-border-radius:12px;
-background:#6366f1;
-color:white;
-cursor:pointer;
-font-weight:600;
-
-}
-
-button:hover{background:#4f46e5}
-
-.admin{
-
-display:none;
-flex-direction:column;
-padding:20px;
-overflow:auto;
-gap:10px;
-}
-
-.ticket{
-
-background:#1f2937;
-padding:12px;
-border-radius:10px;
-font-size:13px;
-
-}
-
-@keyframes pop{
-
-from{
-transform:scale(.8);
-opacity:0;
-}
-
-to{
-transform:scale(1);
-opacity:1;
-}
-
-}
-
-</style></head><body><div class="app"><div class="header">IntercomDesk
-
-<div class="tabs"><button onclick="showChat()">Chat</button>
-
+<button onclick="showChat()">Chat</button>
 <button onclick="showAdmin()">Admin</button>
 
-</div></div><div id="chat" class="chat"></div><div id="inputArea" class="input"><input id="input" placeholder="Type a message"><button onclick="send()">Send</button>
+</div>
 
-</div><div id="admin" class="admin"></div></div><script>
+</div>
 
-const API="https://intercomdesk-v2.onrender.com"
+<div id="chatPage">
 
-let stage="start"
-let selectedCategory=null
-let selectedIssue=null
+<div class="chatbox" id="chatbox"></div>
 
-const chat=document.getElementById("chat")
+<div class="chatInput">
 
-function bubble(text,type){
+<input id="userInput" placeholder="Type message..." />
 
-const msg=document.createElement("div")
-msg.className="bubble "+type
-msg.innerText=text
+<button onclick="sendMessage()">Send</button>
 
-chat.appendChild(msg)
-chat.scrollTop=chat.scrollHeight
+</div>
 
-}
+</div>
 
-function bot(text){bubble(text,"bot")}
-function user(text){bubble(text,"user")}
+<div id="adminPage" style="display:none">
 
-function typing(){
+<h2>Admin Dashboard</h2>
 
-const t=document.createElement("div")
-t.className="typing"
-t.innerText="Bot typing..."
+<div id="adminPanel"></div>
 
-chat.appendChild(t)
+</div>
 
-setTimeout(()=>t.remove(),800)
+<script src="app.js"></script>
 
-}
-
-window.onload=async()=>{
-
-typing()
-
-setTimeout(async()=>{
-
-bot("Hello 👋")
-bot("What issue are you having?")
-
-const res=await fetch(API+"/api/categories")
-window.categories=await res.json()
-
-categories.forEach(c=>{
-bot("• "+c.name)
-})
-
-bot("You can also type: check <ticketID>")
-
-stage="category"
-
-},900)
-
-}
-
-async function send(){
-
-const input=document.getElementById("input")
-const text=input.value.trim()
-
-if(!text)return
-
-user(text)
-input.value=""
-
-if(text.startsWith("check ")){
-
-const id=text.split(" ")[1]
-
-typing()
-
-setTimeout(async()=>{
-
-const res=await fetch(API+"/api/complaints/"+id)
-const data=await res.json()
-
-if(data.error){
-bot("Ticket not found")
-return
-}
-
-const time=new Date(data.createdAt).toLocaleString()
-
-bot("Status: "+data.status)
-bot("Created: "+time)
-bot("Category: "+data.category)
-bot("Issue: "+data.subIssue)
-
-},800)
-
-return
-}
-
-if(stage==="category"){
-
-const match=categories.find(c=>c.name.toLowerCase().includes(text.toLowerCase()))
-
-if(!match){
-bot("Please type one of the categories listed.")
-return
-}
-
-selectedCategory=match.id
-
-typing()
-
-setTimeout(async()=>{
-
-bot("Fetching issue types...")
-
-const res=await fetch(API+"/api/categories/"+selectedCategory)
-window.issues=await res.json()
-
-issues.forEach(i=>{
-bot("• "+i)
-})
-
-bot("Select issue type")
-
-stage="issue"
-
-},800)
-
-return
-}
-
-if(stage==="issue"){
-
-selectedIssue=text
-bot("Please describe the problem")
-
-stage="description"
-return
-
-}
-
-if(stage==="description"){
-
-typing()
-
-setTimeout(async()=>{
-
-bot("Submitting complaint...")
-
-const res=await fetch(API+"/api/complaints",{
-
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-
-category:selectedCategory,
-subIssue:selectedIssue,
-description:text
-
-})
-
-})
-
-const data=await res.json()
-
-bot("✅ Ticket created")
-bot("Reference ID: "+data.reference)
-
-bot("Use: check "+data.reference+" to track")
-
-stage="done"
-
-},900)
-
-}
-
-}
-
-function showAdmin(){
-
-document.getElementById("chat").style.display="none"
-document.getElementById("inputArea").style.display="none"
-
-const admin=document.getElementById("admin")
-
-admin.style.display="flex"
-
-loadTickets()
-
-}
-
-function showChat(){
-
-document.getElementById("chat").style.display="flex"
-document.getElementById("inputArea").style.display="flex"
-
-document.getElementById("admin").style.display="none"
-
-}
-
-async function loadTickets(){
-
-const admin=document.getElementById("admin")
-admin.innerHTML="Loading tickets..."
-
-try{
-
-const res=await fetch(API+"/api/admin")
-const tickets=await res.json()
-
-admin.innerHTML=""
-
-tickets.forEach(t=>{
-
-const el=document.createElement("div")
-el.className="ticket"
-
-el.innerHTML=
-
-"<b>"+t.id+"</b><br>"+
-t.category+" / "+t.subIssue+"<br>"+
-"Status: "+t.status
-
-admin.appendChild(el)
-
-})
-
-}catch{
-
-admin.innerHTML="Admin API not available"
-
-}
-
-}
-
-</script></body></html>
+</body>
+</html>
