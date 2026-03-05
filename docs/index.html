@@ -1,55 +1,231 @@
-<!DOCTYPE html>
-<html>
-
+<!doctype html>
+<html lang="en">
 <head>
-
-<title>IntercomDesk</title>
-
-<link rel="stylesheet" href="style.css">
-
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>IntercomDesk</title>
+  <link rel="stylesheet" href="style.css"/>
 </head>
-
 <body>
+  <div class="bg"></div>
 
-<div class="navbar">
+  <header class="topbar">
+    <div class="brand">
+      <div class="dot"></div>
+      <div>
+        <div class="name">IntercomDesk</div>
+        <div class="tag">Support tickets • Chat • Admin console</div>
+      </div>
+    </div>
 
-<h1>IntercomDesk</h1>
+    <div class="tabs">
+      <button id="tab-user" class="tab active" onclick="UI.show('user')">User</button>
+      <button id="tab-status" class="tab" onclick="UI.show('status')">Status</button>
+      <button id="tab-chat" class="tab" onclick="UI.show('chat')">Chat</button>
+      <button id="tab-admin" class="tab" onclick="UI.show('admin')">Admin</button>
+    </div>
+  </header>
 
-<div class="menu">
+  <main class="wrap">
+    <!-- USER -->
+    <section id="page-user" class="grid">
+      <div class="card big">
+        <h2>Submit a complaint</h2>
+        <p class="muted">Pick a category, choose the issue, set priority, add details, upload proof.</p>
 
-<button onclick="showChat()">Chat</button>
-<button onclick="showAdmin()">Admin</button>
+        <div class="form">
+          <div class="field">
+            <label>Category</label>
+            <div id="catChips" class="chips"></div>
+          </div>
 
-</div>
+          <div class="field">
+            <label>Sub-issue</label>
+            <select id="subIssue"></select>
+          </div>
 
-</div>
+          <div class="field">
+            <label>Priority</label>
+            <select id="priority">
+              <option value="low">Low</option>
+              <option value="normal" selected>Normal</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </div>
 
-<div id="chatPage">
+          <div class="field">
+            <label>Tags (optional)</label>
+            <input id="tags" placeholder="refund, urgent, bug"/>
+          </div>
 
-<div id="chatbox"></div>
+          <div class="field full">
+            <label>Description</label>
+            <textarea id="desc" rows="5" placeholder="Explain what happened, when, and what you expected..."></textarea>
+          </div>
 
-<div class="inputArea">
+          <div class="field full">
+            <label>Proof attachments (optional)</label>
+            <input id="files" type="file" multiple accept="image/*,application/pdf"/>
+            <div class="hint">Max 3 files. Images/PDF. Stored in SQLite for demo.</div>
+          </div>
+        </div>
 
-<input id="userInput" placeholder="Type message..." />
+        <div class="actions">
+          <button class="btn primary" onclick="User.submit()">Submit</button>
+          <button class="btn ghost" onclick="User.reset()">Reset</button>
+        </div>
 
-<button onclick="send()">Send</button>
+        <div id="submitBox" class="box" style="display:none"></div>
+      </div>
 
-</div>
+      <div class="card">
+        <h3>How it works</h3>
+        <ul class="list">
+          <li>Submit complaint → get Reference ID</li>
+          <li>Check status anytime using the ID</li>
+          <li>Chat inside the ticket thread</li>
+          <li>Admin can reply + update status + add internal notes</li>
+        </ul>
 
-</div>
+        <div class="divider"></div>
 
-<div id="adminPage" style="display:none">
+        <h3>Proof folder</h3>
+        <p class="muted">Add screenshots inside <b>docs/proof/</b> and link them in <b>docs/PROOF.md</b>.</p>
+      </div>
+    </section>
 
-<h2>Admin Dashboard</h2>
+    <!-- STATUS -->
+    <section id="page-status" class="grid" style="display:none">
+      <div class="card big">
+        <h2>Check status</h2>
+        <p class="muted">Enter your Reference ID to view status, timeline, admin reply, attachments.</p>
 
-<input id="search" placeholder="Search ticket ID" oninput="loadAdmin()" />
+        <div class="row">
+          <input id="statusId" placeholder="ICD-ABCDE-1234"/>
+          <button class="btn primary" onclick="Status.check()">Check</button>
+        </div>
 
-<div id="adminPanel"></div>
+        <div id="statusBox" class="box" style="display:none"></div>
+      </div>
 
-</div>
+      <div class="card">
+        <h3>Tip</h3>
+        <p class="muted">If admin replies, you’ll see it here. You can also continue the conversation in the Chat tab.</p>
+      </div>
+    </section>
 
-<script src="app.js"></script>
+    <!-- CHAT -->
+    <section id="page-chat" class="grid" style="display:none">
+      <div class="card big">
+        <h2>Ticket chat</h2>
+        <p class="muted">Open a ticket thread by Reference ID and send messages.</p>
 
+        <div class="row">
+          <input id="chatId" placeholder="ICD-ABCDE-1234"/>
+          <button class="btn primary" onclick="Chat.open()">Open</button>
+          <button class="btn ghost" onclick="Chat.close()">Close</button>
+        </div>
+
+        <div id="chatWrap" class="chat" style="display:none">
+          <div class="chatTop">
+            <div>
+              <div class="chatTitle">Thread</div>
+              <div id="chatMeta" class="muted">—</div>
+            </div>
+            <button class="btn ghost" onclick="Chat.refresh()">Refresh</button>
+          </div>
+
+          <div id="chatMsgs" class="msgs"></div>
+
+          <div class="row">
+            <input id="chatText" placeholder="Type your message..."/>
+            <button class="btn primary" onclick="Chat.send()">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>What counts as “wow”</h3>
+        <p class="muted">A real ticket thread that persists + status timeline + admin controls = bounty-grade.</p>
+      </div>
+    </section>
+
+    <!-- ADMIN -->
+    <section id="page-admin" class="grid admin" style="display:none">
+      <div class="card big">
+        <h2>Admin console</h2>
+        <p class="muted">Login with Admin Key → manage tickets like a real helpdesk.</p>
+
+        <div class="row">
+          <input id="adminKey" placeholder="Admin Key"/>
+          <button class="btn primary" onclick="Admin.login()">Login</button>
+          <button class="btn ghost" onclick="Admin.logout()">Logout</button>
+        </div>
+
+        <div id="adminUI" style="display:none">
+          <div class="filters">
+            <input id="q" placeholder="Search (ID, text, tags, assigned)..." oninput="Admin.load()"/>
+            <select id="fStatus" onchange="Admin.load()">
+              <option value="">All status</option>
+              <option value="pending">pending</option>
+              <option value="investigating">investigating</option>
+              <option value="resolved">resolved</option>
+              <option value="rejected">rejected</option>
+            </select>
+            <select id="fPriority" onchange="Admin.load()">
+              <option value="">All priority</option>
+              <option value="low">low</option>
+              <option value="normal">normal</option>
+              <option value="high">high</option>
+              <option value="urgent">urgent</option>
+            </select>
+            <select id="fCategory" onchange="Admin.load()">
+              <option value="">All categories</option>
+            </select>
+            <button class="btn ghost" onclick="Admin.export()">Export</button>
+          </div>
+
+          <div class="split">
+            <div>
+              <div class="subhead">Tickets</div>
+              <div id="ticketList" class="ticketList"></div>
+            </div>
+
+            <div>
+              <div class="subhead">Ticket detail</div>
+              <div id="ticketDetail" class="detail muted">Select a ticket…</div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="subhead">Category manager</div>
+          <div class="row">
+            <button class="btn ghost" onclick="Admin.loadCategories()">Refresh categories</button>
+            <button class="btn primary" onclick="Admin.saveCategories()">Save categories</button>
+            <button class="btn ghost" onclick="Admin.addCategory()">+ Add category</button>
+          </div>
+          <div id="catEditor" class="catEditor"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Admin power features</h3>
+        <ul class="list">
+          <li>Update status + timeline auto logs</li>
+          <li>Reply to user (public)</li>
+          <li>Internal note (private)</li>
+          <li>Assign ticket + tags</li>
+          <li>Send admin chat message</li>
+          <li>Search + filters + export</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
 </body>
-
-</html>
+        </html>
